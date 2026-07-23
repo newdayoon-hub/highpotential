@@ -1,7 +1,7 @@
 import streamlit as st
 
 # =========================================================
-# 페이지 설정
+# 1. 페이지 설정
 # =========================================================
 st.set_page_config(
     page_title="청소년 우울증 경로 시뮬레이터",
@@ -10,51 +10,43 @@ st.set_page_config(
 )
 
 # =========================================================
-# 경로 데이터
+# 2. 경로 데이터
 # =========================================================
-
-# 사용자가 직접 조절하는 독립변인
 FACTORS = [
     {
         "name": "스트레스",
-        "short_name": "스트레스",
         "description": "학업, 대인관계, 수면 부족 등으로 인한 스트레스 정도",
     },
     {
         "name": "HPA축 과활성화",
-        "short_name": "HPA축 과활성화",
-        "description": "스트레스 반응을 담당하는 HPA축이 지나치게 활성화된 정도",
+        "description": "스트레스 반응을 조절하는 HPA축이 과도하게 활성화된 정도",
     },
     {
         "name": "코르티솔 증가",
-        "short_name": "코르티솔 증가",
         "description": "스트레스 호르몬인 코르티솔이 증가한 정도",
     },
     {
         "name": "해마 등의 신경생성 감소",
-        "short_name": "신경생성 감소",
-        "description": "해마 등에서 새로운 신경세포가 생성되는 기능이 감소한 정도",
+        "description": "해마 등에서 새로운 신경세포 생성이 감소한 정도",
     },
     {
         "name": "감정 조절 기능 저하",
-        "short_name": "감정 조절 저하",
-        "description": "부정적인 감정과 스트레스를 조절하는 능력이 저하된 정도",
+        "description": "부정적인 감정과 스트레스를 조절하는 기능이 저하된 정도",
     },
 ]
 
-# 각 경로의 가중치
 PATH_WEIGHTS = [2.3, 3.4, 4.5, 0.7, 1.5]
 
 PATH_NAMES = [
     "스트레스 → HPA축 과활성화",
     "HPA축 과활성화 → 코르티솔 증가",
-    "코르티솔 증가 → 신경생성 감소",
-    "신경생성 감소 → 감정 조절 기능 저하",
+    "코르티솔 증가 → 해마 등의 신경생성 감소",
+    "해마 등의 신경생성 감소 → 감정 조절 기능 저하",
     "감정 조절 기능 저하 → 우울증",
 ]
 
 # =========================================================
-# 치료 데이터
+# 3. 치료 데이터
 # =========================================================
 TREATMENTS = {
     "약물 치료": {
@@ -64,7 +56,6 @@ TREATMENTS = {
             "불안 또는 수면 증상에 대한 보조적 약물 치료",
             "부작용과 증상 변화를 확인하기 위한 정기적 관찰",
         ],
-        # 앱 구조 시험용 임시 효과
         "effect": 0.18,
     },
     "행동 치료": {
@@ -72,7 +63,7 @@ TREATMENTS = {
         "examples": [
             "규칙적인 수면 습관 형성",
             "신체 활동과 일상 활동 증가",
-            "스트레스 상황을 피하지 않고 단계적으로 대처하는 훈련",
+            "회피 행동을 줄이고 단계적으로 활동을 늘리는 훈련",
         ],
         "effect": 0.12,
     },
@@ -88,15 +79,15 @@ TREATMENTS = {
 }
 
 # =========================================================
-# 세션 상태 초기화
+# 4. 기본값과 세션 상태
 # =========================================================
 DEFAULT_VALUES = [30, 20, 20, 20, 20]
 
 for index, default_value in enumerate(DEFAULT_VALUES):
-    slider_key = f"factor_slider_{index}"
+    key = f"factor_slider_{index}"
 
-    if slider_key not in st.session_state:
-        st.session_state[slider_key] = default_value
+    if key not in st.session_state:
+        st.session_state[key] = default_value
 
 if "opened_treatment" not in st.session_state:
     st.session_state.opened_treatment = None
@@ -108,7 +99,7 @@ if "treatment_details" not in st.session_state:
     st.session_state.treatment_details = {}
 
 # =========================================================
-# CSS
+# 5. CSS
 # =========================================================
 st.markdown(
     """
@@ -123,60 +114,78 @@ st.markdown(
         color: #5f6775;
         font-size: 1rem;
         margin-bottom: 1.4rem;
+        line-height: 1.6;
     }
 
     .stage-card {
-        min-height: 190px;
+        min-height: 205px;
         padding: 16px 10px;
         border: 1px solid #d9dee8;
         border-radius: 18px;
         background: linear-gradient(145deg, #ffffff, #f7f9fc);
         text-align: center;
         box-shadow: 0 5px 14px rgba(40, 54, 90, 0.07);
+        overflow: hidden;
     }
 
     .depression-card {
-        min-height: 190px;
+        min-height: 205px;
         padding: 16px 10px;
         border: 2px solid #5366b4;
         border-radius: 18px;
         background: linear-gradient(145deg, #f5f7ff, #ffffff);
         text-align: center;
         box-shadow: 0 5px 16px rgba(70, 85, 160, 0.15);
+        overflow: hidden;
     }
 
     .stage-number {
         display: inline-block;
-        padding: 3px 9px;
-        margin-bottom: 9px;
+        padding: 4px 10px;
+        margin-bottom: 12px;
         border-radius: 20px;
         background-color: #eef1f8;
         color: #49536b;
-        font-size: 0.76rem;
+        font-size: 0.78rem;
         font-weight: 700;
     }
 
     .stage-name {
-        min-height: 66px;
-        font-size: 1rem;
+        min-height: 72px;
+        font-size: 0.96rem;
         font-weight: 800;
         color: #202735;
         display: flex;
         justify-content: center;
         align-items: center;
+        text-align: center;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+        line-height: 1.45;
+        padding: 0 4px;
     }
 
     .stage-value {
-        margin-top: 10px;
-        font-size: 1.5rem;
+        margin-top: 12px;
+        font-size: 1.55rem;
         font-weight: 800;
         color: #4d5ca6;
     }
 
+    .weight-label {
+        text-align: center;
+        margin-top: 8px;
+        font-size: 0.77rem;
+        color: #626b7d;
+        font-weight: 700;
+        word-break: keep-all;
+        line-height: 1.4;
+    }
+
     .auto-label {
         display: inline-block;
-        margin-top: 8px;
-        padding: 3px 8px;
+        margin-top: 10px;
+        padding: 4px 9px;
         border-radius: 10px;
         background-color: #e9edff;
         color: #4558a5;
@@ -185,26 +194,21 @@ st.markdown(
     }
 
     .small-description {
-        margin-top: 8px;
+        margin-top: 10px;
         color: #687184;
-        font-size: 0.76rem;
-        line-height: 1.4;
+        font-size: 0.74rem;
+        line-height: 1.45;
+        text-align: center;
+        word-break: keep-all;
+        overflow-wrap: break-word;
     }
 
     .arrow-box {
         text-align: center;
-        margin-top: 68px;
-        font-size: 1.9rem;
+        margin-top: 70px;
+        font-size: 2rem;
         color: #7b8498;
         font-weight: 800;
-    }
-
-    .weight-label {
-        text-align: center;
-        margin-top: 5px;
-        font-size: 0.76rem;
-        color: #626b7d;
-        font-weight: 700;
     }
 
     .result-low {
@@ -231,24 +235,70 @@ st.markdown(
     [data-testid="stMetricValue"] {
         font-weight: 800;
     }
+
+    @media (max-width: 900px) {
+        .stage-name {
+            font-size: 0.85rem;
+        }
+
+        .stage-value {
+            font-size: 1.35rem;
+        }
+
+        .small-description {
+            font-size: 0.68rem;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # =========================================================
-# 계산 함수
+# 6. HTML 카드 함수
+# =========================================================
+def make_factor_card(
+    factor_number: int,
+    factor_name: str,
+    value: int,
+    weight: float,
+) -> str:
+    return (
+        f'<div class="stage-card">'
+        f'<div class="stage-number">요인 {factor_number}</div>'
+        f'<div class="stage-name">{factor_name}</div>'
+        f'<div class="stage-value">{value}</div>'
+        f'<div class="weight-label">가중치 {weight:.1f}/5.0</div>'
+        f'</div>'
+    )
+
+
+def make_depression_card(score: float) -> str:
+    return (
+        f'<div class="depression-card">'
+        f'<div class="stage-number">종속변인</div>'
+        f'<div class="stage-name">우울감 지표</div>'
+        f'<div class="stage-value">{score:.1f}</div>'
+        f'<div class="auto-label">자동 계산</div>'
+        f'<div class="small-description">'
+        f'앞의 다섯 요인과 가중치를 바탕으로 계산됨'
+        f'</div>'
+        f'</div>'
+    )
+
+
+def make_arrow(weight: float) -> str:
+    return (
+        f'<div class="arrow-box">→</div>'
+        f'<div class="weight-label">가중치 {weight:.1f}</div>'
+    )
+
+# =========================================================
+# 7. 계산 함수
 # =========================================================
 def calculate_depression_score(
     factor_values: list[int],
 ) -> tuple[float, list[float]]:
-    """
-    다섯 요인의 값을 각 경로 가중치와 곱해 우울감 지표를 계산한다.
-
-    가중치가 큰 요인의 슬라이더를 움직일수록
-    전체 우울감 지표가 더 크게 변한다.
-    """
-
     weighted_values = []
 
     for value, weight in zip(factor_values, PATH_WEIGHTS):
@@ -273,15 +323,11 @@ def calculate_depression_score(
 
 
 def calculate_treated_score(score: float) -> tuple[float, float]:
-    """
-    선택한 치료의 임시 효과를 적용해 치료 후 예상 지표를 계산한다.
-    """
-
     remaining_ratio = 1.0
 
     for treatment_name in st.session_state.selected_treatments.values():
-        treatment_effect = TREATMENTS[treatment_name]["effect"]
-        remaining_ratio *= 1 - treatment_effect
+        effect = TREATMENTS[treatment_name]["effect"]
+        remaining_ratio *= 1 - effect
 
     treated_score = score * remaining_ratio
     reduction = score - treated_score
@@ -311,7 +357,7 @@ def reset_app():
     st.session_state.treatment_details = {}
 
 # =========================================================
-# 제목
+# 8. 제목과 설명
 # =========================================================
 st.markdown(
     '<div class="main-title">🧠 청소년 우울증 경로 시뮬레이터</div>',
@@ -319,13 +365,13 @@ st.markdown(
 )
 
 st.markdown(
-    """
-    <div class="subtitle">
-        스트레스가 생물학적·심리적 단계를 거쳐 우울 증상으로
-        이어지는 과정을 조절하고, 단계별 치료 방법을 선택하는
-        교육용 시뮬레이터입니다.
-    </div>
-    """,
+    (
+        '<div class="subtitle">'
+        '스트레스가 생물학적·심리적 단계를 거쳐 우울 증상으로 '
+        '이어지는 과정을 조절하고, 단계별 치료 방법을 선택하는 '
+        '교육용 시뮬레이터입니다.'
+        '</div>'
+    ),
     unsafe_allow_html=True,
 )
 
@@ -335,7 +381,7 @@ st.info(
 )
 
 # =========================================================
-# 사이드바 슬라이더
+# 9. 사이드바 슬라이더
 # =========================================================
 with st.sidebar:
     st.header("⚙️ 요인 조절")
@@ -355,14 +401,14 @@ with st.sidebar:
             key=f"factor_slider_{index}",
             help=(
                 f"{factor['description']} "
-                f"· 적용 가중치: {PATH_WEIGHTS[index]:.1f}/5.0"
+                f"· 가중치 {PATH_WEIGHTS[index]:.1f}/5.0"
             ),
         )
 
         factor_values.append(value)
 
         st.caption(
-            f"가중치 {PATH_WEIGHTS[index]:.1f}/5.0"
+            f"적용 가중치: {PATH_WEIGHTS[index]:.1f}/5.0"
         )
 
     st.divider()
@@ -374,7 +420,7 @@ with st.sidebar:
     )
 
 # =========================================================
-# 우울감 지표 자동 계산
+# 10. 우울감 지표 계산
 # =========================================================
 depression_score, contributions = calculate_depression_score(
     factor_values
@@ -384,64 +430,51 @@ treated_score, reduction = calculate_treated_score(
     depression_score
 )
 
-score_label, score_class = get_score_level(depression_score)
-treated_label, treated_class = get_score_level(treated_score)
+score_label, score_class = get_score_level(
+    depression_score
+)
+
+treated_label, treated_class = get_score_level(
+    treated_score
+)
 
 # =========================================================
-# 메인 우울증 경로
+# 11. 메인 우울증 경로
 # =========================================================
 st.subheader("1. 메인 우울증 경로")
 
-# 요인 카드 5개 + 우울증 카드 1개 + 화살표 영역 5개
 column_sizes = []
 
 for index in range(6):
-    column_sizes.append(2.25)
+    column_sizes.append(2.35)
 
     if index < 5:
-        column_sizes.append(1.05)
+        column_sizes.append(1.0)
 
-path_columns = st.columns(column_sizes, gap="small")
+path_columns = st.columns(
+    column_sizes,
+    gap="small",
+)
 
 column_index = 0
 
-# 독립변인 카드 5개 출력
 for factor_index, factor in enumerate(FACTORS):
     with path_columns[column_index]:
         st.markdown(
-            f"""
-            <div class="stage-card">
-                <div class="stage-number">
-                    요인 {factor_index + 1}
-                </div>
-
-                <div class="stage-name">
-                    {factor["name"]}
-                </div>
-
-                <div class="stage-value">
-                    {factor_values[factor_index]}
-                </div>
-
-                <div class="weight-label">
-                    가중치 {PATH_WEIGHTS[factor_index]:.1f}/5.0
-                </div>
-            </div>
-            """,
+            make_factor_card(
+                factor_number=factor_index + 1,
+                factor_name=factor["name"],
+                value=factor_values[factor_index],
+                weight=PATH_WEIGHTS[factor_index],
+            ),
             unsafe_allow_html=True,
         )
 
     column_index += 1
 
-    # 각 단계 사이의 화살표와 치료 버튼
     with path_columns[column_index]:
         st.markdown(
-            f"""
-            <div class="arrow-box">→</div>
-            <div class="weight-label">
-                가중치 {PATH_WEIGHTS[factor_index]:.1f}
-            </div>
-            """,
+            make_arrow(PATH_WEIGHTS[factor_index]),
             unsafe_allow_html=True,
         )
 
@@ -468,41 +501,20 @@ for factor_index, factor in enumerate(FACTORS):
 
         if chosen_treatment:
             icon = TREATMENTS[chosen_treatment]["icon"]
-            st.caption(f"{icon} {chosen_treatment}")
+            st.caption(
+                f"{icon} {chosen_treatment}"
+            )
 
     column_index += 1
 
-# 마지막 우울증 결과 카드
 with path_columns[column_index]:
     st.markdown(
-        f"""
-        <div class="depression-card">
-            <div class="stage-number">
-                종속변인
-            </div>
-
-            <div class="stage-name">
-                우울감 지표
-            </div>
-
-            <div class="stage-value">
-                {depression_score:.1f}
-            </div>
-
-            <div class="auto-label">
-                자동 계산
-            </div>
-
-            <div class="small-description">
-                앞의 다섯 요인과 경로 가중치를 바탕으로 계산됨
-            </div>
-        </div>
-        """,
+        make_depression_card(depression_score),
         unsafe_allow_html=True,
     )
 
 # =========================================================
-# 치료 선택 화면
+# 12. 치료 선택
 # =========================================================
 opened_treatment = st.session_state.opened_treatment
 
@@ -540,10 +552,11 @@ if opened_treatment is not None:
                 == treatment_name
             )
 
-            if is_selected:
-                button_text = "선택됨 ✓"
-            else:
-                button_text = f"{treatment_name} 선택"
+            button_text = (
+                "선택됨 ✓"
+                if is_selected
+                else f"{treatment_name} 선택"
+            )
 
             if st.button(
                 button_text,
@@ -581,7 +594,7 @@ if opened_treatment is not None:
             st.rerun()
 
 # =========================================================
-# 우울감 결과
+# 13. 우울감 지표 결과
 # =========================================================
 st.divider()
 st.subheader("3. 우울감 지표")
@@ -610,32 +623,35 @@ with result_columns[2]:
         ),
     )
 
-st.progress(depression_score / 100)
+st.progress(
+    min(max(depression_score / 100, 0), 1)
+)
 
 st.markdown(
-    f"""
-    현재 치료 적용 전 지표는
-    <span class="{score_class}">{score_label}</span>이며,
-    선택한 치료를 임시 모형에 적용한 예상 지표는
-    <span class="{treated_class}">{treated_label}</span>입니다.
-    """,
+    (
+        f'현재 치료 적용 전 지표는 '
+        f'<span class="{score_class}">{score_label}</span>이며, '
+        f'선택한 치료를 임시 모형에 적용한 예상 지표는 '
+        f'<span class="{treated_class}">{treated_label}</span>입니다.'
+    ),
     unsafe_allow_html=True,
 )
 
 # =========================================================
-# 요인별 기여도
+# 14. 요인별 기여도
 # =========================================================
 st.subheader("4. 요인별 우울감 지표 기여도")
 
 for index, contribution in enumerate(contributions):
-    left, middle, right = st.columns([4, 2, 2])
+    left, middle, right = st.columns(
+        [4, 2, 2]
+    )
 
     with left:
         st.write(
             f"**{index + 1}. {FACTORS[index]['name']}**"
         )
 
-        # 전체 지표 100점 중 해당 요인이 차지하는 점수
         st.progress(
             min(max(contribution / 100, 0), 1)
         )
@@ -648,7 +664,8 @@ for index, contribution in enumerate(contributions):
 
     with right:
         st.write(
-            f"기여 점수: **{contribution:.1f}점**"
+            f"기여 점수: "
+            f"**{contribution:.1f}점**"
         )
 
     st.caption(
@@ -657,7 +674,7 @@ for index, contribution in enumerate(contributions):
     )
 
 # =========================================================
-# 치료 계획 요약
+# 15. 선택한 치료 계획
 # =========================================================
 st.subheader("5. 선택한 치료 계획")
 
@@ -677,13 +694,17 @@ else:
             ]
         )
 
-        treatment_data = TREATMENTS[treatment_name]
+        treatment_data = TREATMENTS[
+            treatment_name
+        ]
 
         with st.expander(
-            f"{path_index + 1}단계 · "
-            f"{PATH_NAMES[path_index]} "
-            f"→ {treatment_data['icon']} "
-            f"{treatment_name}",
+            (
+                f"{path_index + 1}단계 · "
+                f"{PATH_NAMES[path_index]} "
+                f"→ {treatment_data['icon']} "
+                f"{treatment_name}"
+            ),
             expanded=True,
         ):
             st.write(
@@ -715,9 +736,11 @@ else:
             ] = detail
 
 # =========================================================
-# 계산 방식 설명
+# 16. 계산 방식 설명
 # =========================================================
-with st.expander("우울감 지표 계산 방식 보기"):
+with st.expander(
+    "우울감 지표 계산 방식 보기"
+):
     st.markdown(
         """
         #### 계산 원리
@@ -734,11 +757,11 @@ with st.expander("우울감 지표 계산 방식 보기"):
         × 100
         ```
 
-        따라서 같은 크기로 슬라이더를 움직이더라도
-        가중치가 큰 요인은 우울감 지표를 더 크게 변화시킵니다.
+        같은 크기로 슬라이더를 움직여도 가중치가 큰 요인은
+        우울감 지표를 더 크게 변화시킵니다.
 
-        예를 들어 가중치가 4.5인 코르티솔 관련 슬라이더는
-        가중치가 0.7인 신경생성 관련 슬라이더보다
+        예를 들어 가중치가 4.5인 코르티솔 관련 요인은
+        가중치가 0.7인 신경생성 관련 요인보다
         우울감 지표에 더 큰 영향을 줍니다.
         """
     )
@@ -746,8 +769,7 @@ with st.expander("우울감 지표 계산 방식 보기"):
 st.divider()
 
 st.caption(
-    "주의: 이 앱의 가중치와 치료 효과는 초안 제작을 위한 "
-    "임시 값이다. 실제 청소년 우울증은 유전, 사회관계, 수면, "
-    "신체 건강, 생활환경 등 다양한 요인의 영향을 받으며, "
-    "이 앱은 실제 진단을 목적으로 하지 않는다."
+    "주의: 이 앱의 가중치와 치료 효과는 초안 제작을 위한 임시 값이다. "
+    "실제 청소년 우울증은 유전, 사회관계, 수면, 신체 건강, 생활환경 등 "
+    "다양한 요인의 영향을 받으며, 이 앱은 실제 진단을 목적으로 하지 않는다."
 )
