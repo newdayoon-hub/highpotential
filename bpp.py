@@ -536,7 +536,7 @@ st.write("")
 
 # 6개 조절 노드 + 최종 우울 노드
 path_columns = st.columns([1.2, .35, 1.2, .35, 1.2, .35, 1.2], gap="small")
-for visual_index in range(4):
+for visual_index in range(3):
     node_index = visual_index
     with path_columns[visual_index * 2]:
         st.markdown(
